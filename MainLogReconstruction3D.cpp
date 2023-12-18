@@ -54,7 +54,7 @@ constrainCenterline(std::vector<Z3i::RealPoint> c,std::pair<Z3i::RealPoint ,Z3i:
 * l : the vector of points
 */
 std::pair<Z3i::RealPoint ,Z3i::RealPoint>
-computeBBPCL(std::vector<Z3i::RealPoint> l){
+computeBBXYZ(std::vector<Z3i::RealPoint> l){
     // init extrem values
     double minX = std::numeric_limits<double>::max();
     double maxX = std::numeric_limits<double>::lowest();
@@ -106,7 +106,7 @@ toSector(const std::vector<Z3i::RealPoint> &pcl, const std::vector<unsigned int>
     // a vector of size : nbSec * nbSca * nbPoint
     std::vector<std::vector<std::vector<unsigned int> > > sectors(nbSec,std::vector<std::vector<unsigned int> >(nbSca));
     // compute the height of a sector
-    std::pair<Z3i::RealPoint ,Z3i::RealPoint> bb=computeBBPCL(pcl);
+    std::pair<Z3i::RealPoint ,Z3i::RealPoint> bb=computeBBXYZ(pcl);
     Z3i::RealPoint lb=bb.first;
     Z3i::RealPoint ub=bb.second;
     double minZ = lb[2];
@@ -141,6 +141,7 @@ main(int argc,char **argv)
     // cell's size of discretisation on heigth axis
     double zCellsS=0.05;//in meter
     //number of sector
+    //(CARE : 2 SECTOR DELETED IN NOISE PROCESS -> first and last sector) not a good idea
     unsigned int nbSector {18};
     //if log and centerline are not on the same scale, neeed to multiply centerline by :
     double SCALE=0.001;
@@ -184,16 +185,25 @@ main(int argc,char **argv)
     /*RECONSTRUCT PROCESS BY SECTOR*/
     /*******************************/
     for(int sec=0 ; sec < nbSector ; sec ++ ){
-      //the sector pcl point
-      std::vector<Z3i::RealPoint> sectorPcl = std::vector<Z3i::RealPoint> ();
+      //The sector pcl point
+      std::vector<Z3i::RealPoint> localXYZ = std::vector<Z3i::RealPoint> ();
+      std::vector<unsigned int> localScan = std::vector<unsigned int> ();
       for (int sca = 0;sca<nbScans;sca++){
         for (int id = 0;id<IdBSBS[sec][sca].size();id++){
-          sectorPcl.push_back(logPcl[IdBSBS[sec][sca][id]]);
+          localXYZ.push_back(logPcl[IdBSBS[sec][sca][id]]);
+          localScan.push_back(sca);
         }
       }
-      //Boundary centerline
-      std::vector<Z3i::RealPoint> subCenterlinePcl=constrainCenterline(centerlinePcl,computeDomainePCL(sectorPcl));
-      
+      //Boundary the centerline
+      std::vector<Z3i::RealPoint> subCenterlinePcl=constrainCenterline(centerlinePcl,computeBBXYZ(localXYZ));
+      //Convert to cylindrical
+      std::vector<CylindricalPoint> sectorCYL;
+      //use sub centerline allow speedUp on cylindrical conversion (cause of lenght of centerline for each point)
+      CylindricalCoordinateSystem ccs(subCenterlinePcl, Z3i::RealPoint(0.0,0.0,0.0));
+      for(unsigned int i = 0; i < localXYZ.size(); i++){
+          CylindricalPoint cylP = ccs.xyz2Cylindrical(localXYZ[i]);
+          sectorCYL.push_back(cylP);
+      }
 
     }
     /*****/
