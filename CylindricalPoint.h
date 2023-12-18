@@ -1,10 +1,6 @@
 #ifndef CYLINDRICAL_POINT_H
 #define CYLINDRICAL_POINT_H
 
-
-
-
-//struct cylindrical point
 class CylindricalPoint{
     public:
         CylindricalPoint(double r, double a, double h): radius(r), angle(a), height(h){}
@@ -24,7 +20,7 @@ class CylindricalPoint{
             if( scala != 0.0 ){
                 rs.radius = this->radius / scala;
                 rs.angle = this->angle / scala;
-                rs.height = this->height / scala; 
+                rs.height = this->height / scala;
             }
             return rs;
         }

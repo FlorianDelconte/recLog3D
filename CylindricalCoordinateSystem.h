@@ -7,18 +7,6 @@
 #include "CylindricalPoint.h"
 
 
-///////////////////////////////////////////////////////////////////////////////
-// class CylindricalCoordinateSystem
-/**
- * Description of class 'CylindricalCoordinateSystem' <p>
- *
- * @brief Helper class to compute the cylindrical coordinate system from a centerline (multisegment line)and a mark point,
- * starting point to compute the theta (theta = 0)
- *
- *
- */
-
-
 using namespace DGtal;
 
 
@@ -37,10 +25,6 @@ public:
 
     unsigned int getSegment(const Z3i::RealPoint &aPoint);
 
-    //Z3i::RealPoint getRadialVector(const CylindricalPoint &cp);
-
-
-//protected functions
 protected:
     void init();
 
