@@ -50,7 +50,41 @@ constrainCenterline(std::vector<Z3i::RealPoint> c,std::pair<Z3i::RealPoint ,Z3i:
 }
 
 /**
-* to compute the bounding box from vector of Z3i point
+* to compute the bounding box from vector of Z3i point in CYL coordinate
+* l : the vector of points
+* TODO : template |CYL | XYZ |
+*/
+std::pair<CylindricalPoint ,CylindricalPoint>
+computeDomaineCYL(std::vector<CylindricalPoint> l){
+    // Initialisation des valeurs extrêmes.
+
+    double minA = l[0].angle;
+    double maxA = l[0].angle;
+    double minR = l[0].radius;
+    double maxR = l[0].radius;
+    double minZ = l[0].height;
+    double maxZ = l[0].height;
+    // tous les points pour calculer les valeurs extrêmes.
+    for (const CylindricalPoint& point : l) {
+        double a = point.angle;
+        double r = point.radius;
+        double z = point.height;
+        // Mise à jour des valeurs minimales et maximales.
+        if (a < minA) minA = a;
+        if (a > maxA) maxA = a;
+        if (r < minR) minR = r;
+        if (r > maxR) maxR = r;
+        if (z < minZ) minZ = z;
+        if (z > maxZ) maxZ = z;
+    }
+    std::pair<CylindricalPoint ,CylindricalPoint> p;
+    p.first=CylindricalPoint(minR, minA, minZ);
+    p.second=CylindricalPoint(maxR, maxA, maxZ);
+    return p;
+}
+
+/**
+* to compute the bounding box from vector of Z3i point in XYZ coordinate
 * l : the vector of points
 */
 std::pair<Z3i::RealPoint ,Z3i::RealPoint>
@@ -188,10 +222,12 @@ main(int argc,char **argv)
       //The sector pcl point
       std::vector<Z3i::RealPoint> localXYZ = std::vector<Z3i::RealPoint> ();
       std::vector<unsigned int> localScan = std::vector<unsigned int> ();
+      std::vector<unsigned int> localId = std::vector<unsigned int> ();
       for (int sca = 0;sca<nbScans;sca++){
         for (int id = 0;id<IdBSBS[sec][sca].size();id++){
           localXYZ.push_back(logPcl[IdBSBS[sec][sca][id]]);
           localScan.push_back(sca);
+          localId.push_back(IdBSBS[sec][sca][id]);
         }
       }
       //Boundary the centerline
@@ -204,6 +240,32 @@ main(int argc,char **argv)
           CylindricalPoint cylP = ccs.xyz2Cylindrical(localXYZ[i]);
           sectorCYL.push_back(cylP);
       }
+      //Init discretisation map : each cells of discretisation is a pair of int : <index of point, scan number>
+      std::vector<std::vector<std::vector<std::vector<std::pair<int,int>>>>> discretisationMap;
+      std::pair<CylindricalPoint ,CylindricalPoint> bbcyl =computeDomaineCYL(cyls);
+      int rSize=floor((bbcyl.second.radius - bbcyl.first.radius)/rCellsS)+1;
+      int aSize=floor((bbcyl.second.angle - bbcyl.first.angle)/aCellsS)+1;
+      int zSize=floor((bbcyl.second.height - bbcyl.first.height)/zCellsS)+1;
+      for (int r = 0; r < rSize; ++r){
+          trace.progressBar(r, rSize);
+          discretisationMap[r]=std::vector<std::vector<std::vector<std::pair<int,int>>>>(aSize);
+          for (int a = 0; a < aSize; ++a){
+              discretisationMap[r][a]=std::vector<std::vector<std::pair<int,int>>>(zSize);
+              for (int z = 0; z < zSize; ++z){
+                  discretisationMap[r][a][z]=std::vector<std::pair<int,int>>();
+              }
+          }
+      }
+      //insert id of point and scans in discretisation
+      /*for(int i = 0; i < cylPoints.size(); i++){
+        CylindricalPoint mpCurrent=sectorCYL[i];
+        int indr=floor((mpCurrent.radius- bbcyl.first.radius)/rCellsSize);
+        int inda=floor((mpCurrent.angle- bbcyl.first.angle)/aCellsSize);
+        int indz=floor((mpCurrent.height- bbcyl.first.height)/zCellsSize);
+        std::pair<int,int> id_PS;
+
+      }*/
+      //Use density by radius to reconstruct log
 
     }
     /*****/
