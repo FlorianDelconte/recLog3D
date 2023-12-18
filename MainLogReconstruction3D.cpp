@@ -27,6 +27,78 @@
 
 using namespace DGtal;
 
+/**
+* to compute the bounding box from vector of Z3i point
+* l : the vector of points
+*/
+std::pair<Z3i::RealPoint ,Z3i::RealPoint>
+computeBBPCL(std::vector<Z3i::RealPoint> l){
+    // init extrem values
+    double minX = std::numeric_limits<double>::max();
+    double maxX = std::numeric_limits<double>::lowest();
+    double minY = std::numeric_limits<double>::max();
+    double maxY = std::numeric_limits<double>::lowest();
+    double minZ = std::numeric_limits<double>::max();
+    double maxZ = std::numeric_limits<double>::lowest();
+    for (const Z3i::RealPoint& point : l) {
+        double x = point[0];
+        double y = point[1];
+        double z = point[2];
+        //maj extrema values
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+        if (z < minZ) minZ = z;
+        if (z > maxZ) maxZ = z;
+    }
+    //the bb is a pair (downRight, upLeft)
+    std::pair<Z3i::RealPoint ,Z3i::RealPoint> p;
+    p.first=Z3i::RealPoint(minX, minY, minZ);
+    p.second=Z3i::RealPoint(maxX, maxY, maxZ);
+    return p;
+}
+
+/**
+* for rescale a vector of Z3i Point by scale paramater
+* pts : the vector of Z3i point to rescal
+* scale : the scale factor
+*/
+void
+scaleCloud(std::vector<Z3i::RealPoint> &pts, double scale){
+  for(unsigned int i = 0; i <  pts.size(); i++){
+    Z3i::RealPoint &pi =  pts[i];
+    pi *= scale;
+  }
+}
+/**
+* Distrbute each point in a vector (that's represent the sector).
+* pcl : a vector of Z3i point
+* id : a vector of unisgned int. The cleaned id point ( after noise processing)
+* idS : a vector of unsigned int. The scan id point, number from 0 to 3 for each id. (That's represent the scan number)
+* nbP : the number of sector (the lenght of sector is compute by height of the lof / by nbP)
+* nbS : the number of scan. (3 for 'pin sylvestre')
+*/
+std::vector<std::vector<std::vector<unsigned int>>>
+toSector(const std::vector<Z3i::RealPoint> &pcl, const std::vector<unsigned int> &id, const std::vector<unsigned int> &idS, int nbSec, int nbSca){
+    // a vector of size : nbSec * nbSca * nbPoint
+    std::vector<std::vector<std::vector<unsigned int> > > sectors(nbSec,std::vector<std::vector<unsigned int> >(nbSca));
+    // compute the height of a sector
+    std::pair<Z3i::RealPoint ,Z3i::RealPoint> bb=computeBBPCL(pcl);
+    Z3i::RealPoint lb=bb.first;
+    Z3i::RealPoint ub=bb.second;
+    double minZ = lb[2];
+    double maxZ = ub[2];
+    double rangeZ = maxZ - minZ;
+    double sliceHeight = rangeZ / nbSec;
+    // including input pcl for each parts
+    for(int i=0;i<id.size();i++){
+        auto fc = pcl[id[i]];
+        unsigned int indexSec = floor((fc[2]-minZ)/sliceHeight);
+        sectors[indexSec][idS[i]].push_back(id[i]);
+    }
+    return sectors;
+}
 
 int
 main(int argc,char **argv)
@@ -51,7 +123,7 @@ main(int argc,char **argv)
     //if log and centerline are not on the same scale, neeed to multiply centerline by :
     double SCALE=0.001;
     //number of scans
-    int NBS = 4;
+    int NBS = 3;
     /*******************************/
     /* parse command line using CLI*/
     /*******************************/
@@ -69,13 +141,35 @@ main(int argc,char **argv)
     /*******************/
     /*LOAD ID clean log*/
     /*******************/
-    std::vector<unsigned int> globalLogID=std::vector<unsigned int>();
-    std::vector<unsigned int> globalLogScanID=std::vector<unsigned int>();
-    IOHelper::import(logCleanId,globalLogID,globalLogScanID);
+    std::vector<unsigned int> cleanLogID=std::vector<unsigned int>();
+    std::vector<unsigned int> cleanLogScanID=std::vector<unsigned int>();
+    IOHelper::import(logCleanId,cleanLogID,cleanLogScanID);
     /**************/
     /*LOAD PCL log*/
     /**************/
     trace.info()<<"read XYZ..."<<std::endl;
     std::vector<Z3i::RealPoint> logPcl = PointListReader<Z3i::RealPoint>::getPointsFromFile(logFile);
-
+    /*******************************/
+    /*LAUNCH CENTERLINE AND RESCALE*/
+    /*******************************/
+    std::vector<Z3i::RealPoint> centerlinePcl = PointListReader<Z3i::RealPoint>::getPointsFromFile(centerlineFile);
+    scaleCloud(centerlinePcl,SCALE);
+    /**************************************/
+    /*CREATE ONE VECTOR BY SECTOR BY SCANS*/
+    /**************************************/
+    std::vector< std::vector < std::vector<unsigned int> > > IdBSBS = toSector(logPcl,cleanLogID,cleanLogScanID,nbP,NBS);
+    /*******************************/
+    /*RECONSTRUCT PROCESS BY SECTOR*/
+    /*******************************/
+    
+    /*****/
+    /*Out*/
+    /*****/
+    /*
+    std::vector<Z3i::RealPoint> logPclClean;
+    for(int i =0;i<cleanLogID.size();i++){
+      logPclClean.push_back(logPcl[cleanLogID[i]]);
+    }
+    IOHelper::export2Text(logPclClean,outputFile+"_clean.xyz");
+    */
 }
