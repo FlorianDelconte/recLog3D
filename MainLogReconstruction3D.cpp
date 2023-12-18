@@ -28,6 +28,28 @@
 using namespace DGtal;
 
 /**
+* extract the part of centerline thats is in the bb give in paramater
+* c : the centerline, a vector of Z3i point
+* bb : the bounding box, a pair of point (downRight,upLeft)
+* Allows speed up for the cylindrical coordinate conversion
+*/
+std::vector<Z3i::RealPoint>
+constrainCenterline(std::vector<Z3i::RealPoint> c,std::pair<Z3i::RealPoint ,Z3i::RealPoint>  bb){
+    std::vector<Z3i::RealPoint>sub_c;
+    Z3i::RealPoint lb=bb.first;
+    Z3i::RealPoint ub=bb.second;
+    trace.info()<<c.size()<<std::endl;
+    for(int i =0;i<c.size();i++){
+        if(c[i][0]>lb[0] && c[i][1]>lb[1] && c[i][2]>lb[2] &&
+           c[i][0]<ub[0] && c[i][1]<ub[1] && c[i][2]<ub[2] ){
+            sub_c.push_back(c[i]);
+
+        }
+    }
+    return sub_c;
+}
+
+/**
 * to compute the bounding box from vector of Z3i point
 * l : the vector of points
 */
@@ -119,11 +141,11 @@ main(int argc,char **argv)
     // cell's size of discretisation on heigth axis
     double zCellsS=0.05;//in meter
     //number of sector
-    unsigned int nbP {20};
+    unsigned int nbSector {18};
     //if log and centerline are not on the same scale, neeed to multiply centerline by :
     double SCALE=0.001;
     //number of scans
-    int NBS = 3;
+    int nbScans = 3;
     /*******************************/
     /* parse command line using CLI*/
     /*******************************/
@@ -134,7 +156,7 @@ main(int argc,char **argv)
     app.add_option("-r, --radiusCellsSize", rCellsS, "cell size of discretisation on radius axis");
     app.add_option("-a, --angleCellsSize", aCellsS, "cell size of discretisation on angle axis");
     app.add_option("-z, --zCellsSize", zCellsS, "cell size of discretisation on height axis");
-    app.add_option("-n, --numberSec", nbP, "number of sector for log analyze");
+    app.add_option("-n, --numberSec", nbSector, "number of sector for log analyze");
     app.add_option("-o, --output", outputFile, "output prefixe");
     app.get_formatter()->column_width(40);
     CLI11_PARSE(app, argc, argv);
@@ -157,11 +179,23 @@ main(int argc,char **argv)
     /**************************************/
     /*CREATE ONE VECTOR BY SECTOR BY SCANS*/
     /**************************************/
-    std::vector< std::vector < std::vector<unsigned int> > > IdBSBS = toSector(logPcl,cleanLogID,cleanLogScanID,nbP,NBS);
+    std::vector< std::vector < std::vector< unsigned int > > > IdBSBS = toSector(logPcl,cleanLogID,cleanLogScanID,nbSector,nbScans);
     /*******************************/
     /*RECONSTRUCT PROCESS BY SECTOR*/
     /*******************************/
+    for(int sec=0 ; sec < nbSector ; sec ++ ){
+      //the sector pcl point
+      std::vector<Z3i::RealPoint> sectorPcl = std::vector<Z3i::RealPoint> ();
+      for (int sca = 0;sca<nbScans;sca++){
+        for (int id = 0;id<IdBSBS[sec][sca].size();id++){
+          sectorPcl.push_back(logPcl[IdBSBS[sec][sca][id]]);
+        }
+      }
+      //Boundary centerline
+      std::vector<Z3i::RealPoint> subCenterlinePcl=constrainCenterline(centerlinePcl,computeDomainePCL(sectorPcl));
+      
 
+    }
     /*****/
     /*Out*/
     /*****/
