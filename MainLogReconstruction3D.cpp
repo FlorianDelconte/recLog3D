@@ -155,6 +155,42 @@ toSector(const std::vector<Z3i::RealPoint> &pcl, const std::vector<unsigned int>
     }
     return sectors;
 }
+/**
+*Reconstruct log by cylindrical sector loop. Search for each part of the sector, the best density (number of point in a part of cylindrical sector), delete all other in the part.
+/* discretisationMap : the discret cells
+/* rS : radius dimension (number of cells)
+/* aS : angle dimension (number of cells)
+/* zS : Height dimension (number of cells)
+/* return a vector of index (points accepted) and the corresponding scan id
+*/
+std::vector<std::pair<int,int>>
+reconstruct_by_BestScanInSecCyl(const std::vector<std::vector<std::vector<std::vector<std::pair<int,int>>>>> discretisationMap,
+                        int rS,int aS,int zS){
+    //log <indexPCL|indexScan> to reconstruct
+    std::vector<std::pair<int,int>> logRec;
+    for (int z = 0; z < zS; ++z){
+        trace.progressBar(z, zS);
+        for (int a = 0; a < aS; ++a){
+            for (int r = 0; r < rS; ++r){
+                //vérifie que ce n'est pas une cellule vide
+                if(discretisationMap[r][a][z].size()>0){
+                    std::vector<std::pair<int,int>> id_PS=discretisationMap[r][a][z];
+                    //calcul le scan le plus présent dans le secteur cylindrique
+                    int scan_id=getBestScanId(id_PS);
+                    //ajoute les points du bestScan a la reconstruction
+                    for(int i = 0;i<id_PS.size();i++){
+                        //si le numero du point est dans le bestScan
+                        if(id_PS[i].second == scan_id){
+                            //le point pcl
+                            logRec.push_back(id_PS[i]);
+                        }
+                    }
+                }
+            }
+        }
+    }trace.info()<<std::endl;
+    return logRec;
+}
 
 int
 main(int argc,char **argv)
@@ -217,6 +253,13 @@ main(int argc,char **argv)
     /*******************************/
     /*RECONSTRUCT PROCESS BY SECTOR*/
     /*******************************/
+    //colors (1 for each scans)
+    Z3i::RealPoint palette[NBS] {Z3i::RealPoint(255,0,0),Z3i::RealPoint(0,255,0),
+                                Z3i::RealPoint(0,0,255),Z3i::RealPoint(255,255,0)};
+    //global log reconstruct
+    std::vector<unsigned int> globalRecId=std::vector<unsigned int>();
+    std::vector<unsigned int> globalRecScan=std::vector<unsigned int>();
+    //for each sector...
     for(int sec=0 ; sec < nbSector ; sec ++ ){
       //local  pcl point
       std::vector<Z3i::RealPoint> localXYZ = std::vector<Z3i::RealPoint> ();
@@ -265,12 +308,17 @@ main(int argc,char **argv)
         int inda=floor((mpCurrent.angle- bbcyl.first.angle)/aCellsS);
         int indz=floor((mpCurrent.height- bbcyl.first.height)/zCellsS);
         std::pair<int,int> id_PS;
-        id_PS.first=localId[i];
+        id_PS.first=localId[i];std::vector<std::pair<int,int>> logID=reconstruct_by_BestScanInSecCyl(discretisationMap,rSize,aSize,zSize);
         id_PS.second=localScan[i];
         discretisationMap[indr][inda][indz].push_back(id_PS);
       }
       //Use density by radius to reconstruct log
-      
+      std::vector<std::pair<int,int>> rec=reconstruct_by_BestScanInSecCyl(discretisationMap,rSize,aSize,zSize);
+      //add to global
+      /*for (int i =0;i< rec.size();i++ ){
+          globalRecId.push_back(logPcl[logID[i].first]);
+          globalRecScan.push_back(palette[logID[i].second]);
+      }*/
     }
     /*****/
     /*Out*/
