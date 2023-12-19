@@ -55,7 +55,7 @@ constrainCenterline(std::vector<Z3i::RealPoint> c,std::pair<Z3i::RealPoint ,Z3i:
 * TODO : template |CYL | XYZ |
 */
 std::pair<CylindricalPoint ,CylindricalPoint>
-computeDomaineCYL(std::vector<CylindricalPoint> l){
+computeBBCYL(std::vector<CylindricalPoint> l){
     // Initialisation des valeurs extrêmes.
 
     double minA = l[0].angle;
@@ -163,7 +163,7 @@ main(int argc,char **argv)
     //path to PCL log
     std::string logFile="/volWork/these/DATA/THDATA/30_08_data_avricourt/FINAL/results/byInd/WSPS4/RGB_R_WSPS4_Cloud.xyz";
     //path to PCL centerline
-    std::string centerlineFile="/volWork/these/DATA/THDATA/30_08_data_avricourt/FINAL/results/centerline/WSPS1.asc_centerline.xyz";
+    std::string centerlineFile="/volWork/these/DATA/THDATA/30_08_data_avricourt/FINAL/results/centerline/WSPS4.asc_centerline.xyz";
     //output prefixe
     std::string outputFile="WSPS4";
     //path to clean id log
@@ -204,7 +204,6 @@ main(int argc,char **argv)
     /**************/
     /*LOAD PCL log*/
     /**************/
-    trace.info()<<"read XYZ..."<<std::endl;
     std::vector<Z3i::RealPoint> logPcl = PointListReader<Z3i::RealPoint>::getPointsFromFile(logFile);
     /*******************************/
     /*LAUNCH CENTERLINE AND RESCALE*/
@@ -219,10 +218,13 @@ main(int argc,char **argv)
     /*RECONSTRUCT PROCESS BY SECTOR*/
     /*******************************/
     for(int sec=0 ; sec < nbSector ; sec ++ ){
-      //The sector pcl point
+      //local  pcl point
       std::vector<Z3i::RealPoint> localXYZ = std::vector<Z3i::RealPoint> ();
+      //local  id scan
       std::vector<unsigned int> localScan = std::vector<unsigned int> ();
+      //local  id point
       std::vector<unsigned int> localId = std::vector<unsigned int> ();
+      //pas très opti... redondant
       for (int sca = 0;sca<nbScans;sca++){
         for (int id = 0;id<IdBSBS[sec][sca].size();id++){
           localXYZ.push_back(logPcl[IdBSBS[sec][sca][id]]);
@@ -233,21 +235,20 @@ main(int argc,char **argv)
       //Boundary the centerline
       std::vector<Z3i::RealPoint> subCenterlinePcl=constrainCenterline(centerlinePcl,computeBBXYZ(localXYZ));
       //Convert to cylindrical
-      std::vector<CylindricalPoint> sectorCYL;
+      std::vector<CylindricalPoint> localCYL;
       //use sub centerline allow speedUp on cylindrical conversion (cause of lenght of centerline for each point)
       CylindricalCoordinateSystem ccs(subCenterlinePcl, Z3i::RealPoint(0.0,0.0,0.0));
       for(unsigned int i = 0; i < localXYZ.size(); i++){
           CylindricalPoint cylP = ccs.xyz2Cylindrical(localXYZ[i]);
-          sectorCYL.push_back(cylP);
+          localCYL.push_back(cylP);
       }
       //Init discretisation map : each cells of discretisation is a pair of int : <index of point, scan number>
-      std::vector<std::vector<std::vector<std::vector<std::pair<int,int>>>>> discretisationMap;
-      std::pair<CylindricalPoint ,CylindricalPoint> bbcyl =computeDomaineCYL(cyls);
+      std::pair<CylindricalPoint ,CylindricalPoint> bbcyl =computeBBCYL(localCYL);
       int rSize=floor((bbcyl.second.radius - bbcyl.first.radius)/rCellsS)+1;
       int aSize=floor((bbcyl.second.angle - bbcyl.first.angle)/aCellsS)+1;
       int zSize=floor((bbcyl.second.height - bbcyl.first.height)/zCellsS)+1;
+      std::vector<std::vector<std::vector<std::vector<std::pair<int,int>>>>> discretisationMap(rSize);
       for (int r = 0; r < rSize; ++r){
-          trace.progressBar(r, rSize);
           discretisationMap[r]=std::vector<std::vector<std::vector<std::pair<int,int>>>>(aSize);
           for (int a = 0; a < aSize; ++a){
               discretisationMap[r][a]=std::vector<std::vector<std::pair<int,int>>>(zSize);
@@ -256,17 +257,20 @@ main(int argc,char **argv)
               }
           }
       }
+
       //insert id of point and scans in discretisation
-      /*for(int i = 0; i < cylPoints.size(); i++){
-        CylindricalPoint mpCurrent=sectorCYL[i];
-        int indr=floor((mpCurrent.radius- bbcyl.first.radius)/rCellsSize);
-        int inda=floor((mpCurrent.angle- bbcyl.first.angle)/aCellsSize);
-        int indz=floor((mpCurrent.height- bbcyl.first.height)/zCellsSize);
+      for(int i = 0; i < localCYL.size(); i++){
+        CylindricalPoint mpCurrent=localCYL[i];
+        int indr=floor((mpCurrent.radius- bbcyl.first.radius)/rCellsS);
+        int inda=floor((mpCurrent.angle- bbcyl.first.angle)/aCellsS);
+        int indz=floor((mpCurrent.height- bbcyl.first.height)/zCellsS);
         std::pair<int,int> id_PS;
-
-      }*/
+        id_PS.first=localId[i];
+        id_PS.second=localScan[i];
+        discretisationMap[indr][inda][indz].push_back(id_PS);
+      }
       //Use density by radius to reconstruct log
-
+      
     }
     /*****/
     /*Out*/
