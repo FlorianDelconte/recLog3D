@@ -364,5 +364,16 @@ main(int argc,char **argv)
     /*****/
     /*Out*/
     /*****/
+    //global log id
     IOHelper::export2Text(globalRecId,globalRecScan,outputFile+"_rec.id");
+    //global log reconstruct with color per scan
+    std::vector<Z3i::RealPoint> globalRecXYZ=std::vector<Z3i::RealPoint>();
+    std::vector<Z3i::RealPoint> globalRecCOLOR=std::vector<Z3i::RealPoint>();
+
+    for (int i =0;i< globalRecId.size();i++ ){
+        globalRecXYZ.push_back(logPcl[globalRecId[i]]);
+        globalRecCOLOR.push_back(palette[globalRecScan[i]]);
+    }
+    IOHelper::export2Text(globalRecXYZ,globalRecCOLOR,outputFile+"_rec_colorByScan.xyz");
+
 }
