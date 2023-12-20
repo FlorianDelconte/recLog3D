@@ -38,7 +38,6 @@ constrainCenterline(std::vector<Z3i::RealPoint> c,std::pair<Z3i::RealPoint ,Z3i:
     std::vector<Z3i::RealPoint>sub_c;
     Z3i::RealPoint lb=bb.first;
     Z3i::RealPoint ub=bb.second;
-    trace.info()<<c.size()<<std::endl;
     for(int i =0;i<c.size();i++){
         if(c[i][0]>lb[0] && c[i][1]>lb[1] && c[i][2]>lb[2] &&
            c[i][0]<ub[0] && c[i][1]<ub[1] && c[i][2]<ub[2] ){
@@ -156,6 +155,28 @@ toSector(const std::vector<Z3i::RealPoint> &pcl, const std::vector<unsigned int>
     return sectors;
 }
 /**
+* get the scan number thats is the most present in the vector
+* i_ps : the vector of pair : id point | id scan
+*/
+int
+getBestScanId(std::vector<std::pair<int,int>> i_ps){
+    int bestScan=-1;
+    //4 scans max
+    std::vector<int> counterScan=std::vector<int>(4,0);
+    //count
+    for(int i =0;i<i_ps.size();i++){
+        counterScan[i_ps[i].second]+=1;
+    }
+    //max
+    for(int i =0;i<counterScan.size();i++){
+        if(counterScan[i]>bestScan){
+            bestScan=i;
+        }
+    }
+    return bestScan;
+}
+
+/**
 *Reconstruct log by cylindrical sector loop. Search for each part of the sector, the best density (number of point in a part of cylindrical sector), delete all other in the part.
 /* discretisationMap : the discret cells
 /* rS : radius dimension (number of cells)
@@ -169,7 +190,6 @@ reconstruct_by_BestScanInSecCyl(const std::vector<std::vector<std::vector<std::v
     //log <indexPCL|indexScan> to reconstruct
     std::vector<std::pair<int,int>> logRec;
     for (int z = 0; z < zS; ++z){
-        trace.progressBar(z, zS);
         for (int a = 0; a < aS; ++a){
             for (int r = 0; r < rS; ++r){
                 //vérifie que ce n'est pas une cellule vide
@@ -188,7 +208,7 @@ reconstruct_by_BestScanInSecCyl(const std::vector<std::vector<std::vector<std::v
                 }
             }
         }
-    }trace.info()<<std::endl;
+    }
     return logRec;
 }
 
@@ -197,13 +217,13 @@ main(int argc,char **argv)
 {
 
     //path to PCL log
-    std::string logFile="/volWork/these/DATA/THDATA/30_08_data_avricourt/FINAL/results/byInd/WSPS4/RGB_R_WSPS4_Cloud.xyz";
+    std::string logFile="../data/RGB_R_WSPS4_Cloud.xyz";
     //path to PCL centerline
-    std::string centerlineFile="/volWork/these/DATA/THDATA/30_08_data_avricourt/FINAL/results/centerline/WSPS4.asc_centerline.xyz";
+    std::string centerlineFile="../data/WSPS4_centerline.xyz";
     //output prefixe
     std::string outputFile="WSPS4";
     //path to clean id log
-    std::string logCleanId="/volWork/these/source/reconstruction/data/WSPS4_clean.id";
+    std::string logCleanFile="../data/WSPS4_clean.id";
     // cell's size of discretisation on radius axis
     double rCellsS=0.05;//in meter
     // cell's size of discretisation on angle axis
@@ -231,36 +251,51 @@ main(int argc,char **argv)
     app.add_option("-o, --output", outputFile, "output prefixe");
     app.get_formatter()->column_width(40);
     CLI11_PARSE(app, argc, argv);
-    /*******************/
-    /*LOAD ID clean log*/
-    /*******************/
+
+    double load_duration=0.;
+    double rec_duration=0.;
+          /******/
+          /*LOAD*/
+          /******/
+    trace.beginBlock("load ...");
+    /***************/
+    /* id clean log*/
+    /***************/
     std::vector<unsigned int> cleanLogID=std::vector<unsigned int>();
     std::vector<unsigned int> cleanLogScanID=std::vector<unsigned int>();
-    IOHelper::import(logCleanId,cleanLogID,cleanLogScanID);
-    /**************/
-    /*LOAD PCL log*/
-    /**************/
+    IOHelper::import(logCleanFile,cleanLogID,cleanLogScanID);
+    /**********/
+    /* pcl log*/
+    /**********/
     std::vector<Z3i::RealPoint> logPcl = PointListReader<Z3i::RealPoint>::getPointsFromFile(logFile);
-    /*******************************/
-    /*LAUNCH CENTERLINE AND RESCALE*/
-    /*******************************/
+    /*************************/
+    /* cenrerline and rescale*/
+    /*************************/
     std::vector<Z3i::RealPoint> centerlinePcl = PointListReader<Z3i::RealPoint>::getPointsFromFile(centerlineFile);
     scaleCloud(centerlinePcl,SCALE);
-    /**************************************/
-    /*CREATE ONE VECTOR BY SECTOR BY SCANS*/
-    /**************************************/
+    /********************************/
+    /* one vector by sector by scans*/
+    /********************************/
     std::vector< std::vector < std::vector< unsigned int > > > IdBSBS = toSector(logPcl,cleanLogID,cleanLogScanID,nbSector,nbScans);
-    /*******************************/
-    /*RECONSTRUCT PROCESS BY SECTOR*/
-    /*******************************/
+    load_duration+=trace.endBlock();
+    trace.info()<<"number of points in brut log : "<<logPcl.size()<<std::endl;
+    trace.info()<<"number of points in clean log : "<<cleanLogID.size()<<std::endl;
+    trace.info()<<"number of points in centerline : "<<centerlinePcl.size()<<std::endl;
+    trace.info()<<"total time load : "<<load_duration<<std::endl;
+          /*******************************/
+          /*RECONSTRUCT PROCESS BY SECTOR*/
+          /*******************************/
+    trace.beginBlock("process ...");
     //colors (1 for each scans)
-    Z3i::RealPoint palette[NBS] {Z3i::RealPoint(255,0,0),Z3i::RealPoint(0,255,0),
+    Z3i::RealPoint palette[nbScans] {Z3i::RealPoint(255,0,0),Z3i::RealPoint(0,255,0),
                                 Z3i::RealPoint(0,0,255),Z3i::RealPoint(255,255,0)};
     //global log reconstruct
     std::vector<unsigned int> globalRecId=std::vector<unsigned int>();
     std::vector<unsigned int> globalRecScan=std::vector<unsigned int>();
     //for each sector...
     for(int sec=0 ; sec < nbSector ; sec ++ ){
+      trace.info()<<"------------"<<std::endl;
+      trace.info()<<"extract local sector n°" <<sec<<" ...";
       //local  pcl point
       std::vector<Z3i::RealPoint> localXYZ = std::vector<Z3i::RealPoint> ();
       //local  id scan
@@ -275,17 +310,23 @@ main(int argc,char **argv)
           localId.push_back(IdBSBS[sec][sca][id]);
         }
       }
+      trace.info()<<"OK"<<std::endl;
       //Boundary the centerline
+      trace.info()<<"bound centerline...";
       std::vector<Z3i::RealPoint> subCenterlinePcl=constrainCenterline(centerlinePcl,computeBBXYZ(localXYZ));
+      trace.info()<<"OK"<<std::endl;
       //Convert to cylindrical
+      trace.info()<<"convert to cylindrical..."<<std::endl;;
       std::vector<CylindricalPoint> localCYL;
       //use sub centerline allow speedUp on cylindrical conversion (cause of lenght of centerline for each point)
       CylindricalCoordinateSystem ccs(subCenterlinePcl, Z3i::RealPoint(0.0,0.0,0.0));
       for(unsigned int i = 0; i < localXYZ.size(); i++){
+          trace.progressBar(i, localXYZ.size());
           CylindricalPoint cylP = ccs.xyz2Cylindrical(localXYZ[i]);
           localCYL.push_back(cylP);
-      }
+      }trace.info()<<std::endl;
       //Init discretisation map : each cells of discretisation is a pair of int : <index of point, scan number>
+      trace.info()<<"init local discretisation...";
       std::pair<CylindricalPoint ,CylindricalPoint> bbcyl =computeBBCYL(localCYL);
       int rSize=floor((bbcyl.second.radius - bbcyl.first.radius)/rCellsS)+1;
       int aSize=floor((bbcyl.second.angle - bbcyl.first.angle)/aCellsS)+1;
@@ -300,34 +341,37 @@ main(int argc,char **argv)
               }
           }
       }
-
+      trace.info()<<"OK"<<std::endl;
       //insert id of point and scans in discretisation
+      trace.info()<<"insert points in discretisation...";
       for(int i = 0; i < localCYL.size(); i++){
         CylindricalPoint mpCurrent=localCYL[i];
         int indr=floor((mpCurrent.radius- bbcyl.first.radius)/rCellsS);
         int inda=floor((mpCurrent.angle- bbcyl.first.angle)/aCellsS);
         int indz=floor((mpCurrent.height- bbcyl.first.height)/zCellsS);
         std::pair<int,int> id_PS;
-        id_PS.first=localId[i];std::vector<std::pair<int,int>> logID=reconstruct_by_BestScanInSecCyl(discretisationMap,rSize,aSize,zSize);
+        id_PS.first=localId[i];
         id_PS.second=localScan[i];
         discretisationMap[indr][inda][indz].push_back(id_PS);
       }
+      trace.info()<<"OK"<<std::endl;
       //Use density by radius to reconstruct log
+      trace.info()<<"reconstruction...";
       std::vector<std::pair<int,int>> rec=reconstruct_by_BestScanInSecCyl(discretisationMap,rSize,aSize,zSize);
+      trace.info()<<"OK"<<std::endl;
       //add to global
-      /*for (int i =0;i< rec.size();i++ ){
-          globalRecId.push_back(logPcl[logID[i].first]);
-          globalRecScan.push_back(palette[logID[i].second]);
-      }*/
+      trace.info()<<"convert to global...";
+      for (int i =0;i< rec.size();i++ ){
+          globalRecId.push_back(rec[i].first);
+          globalRecScan.push_back(rec[i].second);
+      }
+      trace.info()<<"OK"<<std::endl;
     }
+    rec_duration+=trace.endBlock();
+    trace.info()<<"number of points in reconstruted log : "<<globalRecId.size()<<std::endl;
+    trace.info()<<"total time reconstruction : "<<rec_duration<<std::endl;
     /*****/
     /*Out*/
     /*****/
-    /*
-    std::vector<Z3i::RealPoint> logPclClean;
-    for(int i =0;i<cleanLogID.size();i++){
-      logPclClean.push_back(logPcl[cleanLogID[i]]);
-    }
-    IOHelper::export2Text(logPclClean,outputFile+"_clean.xyz");
-    */
+    IOHelper::export2Text(globalRecId,globalRecScan,outputFile+"_rec.id");
 }
