@@ -242,12 +242,13 @@ main(int argc,char **argv)
     /*******************************/
     CLI::App app;
     app.description("Allowed options are: ");
-    app.add_option("-i, --input", logFile , "log xyz file");
-    app.add_option("-c, --centerline", centerlineFile, "centerline xyz file");
+    app.add_option("-i, --input", logFile , "log, xyz file");
+    app.add_option("-c, --centerline", centerlineFile, "centerline, xyz file");
+    app.add_option("-p, --preCleanedFile", logCleanFile, "cleaned log, id file");
     app.add_option("-r, --radiusCellsSize", rCellsS, "cell size of discretisation on radius axis");
     app.add_option("-a, --angleCellsSize", aCellsS, "cell size of discretisation on angle axis");
     app.add_option("-z, --zCellsSize", zCellsS, "cell size of discretisation on height axis");
-    app.add_option("-n, --numberSec", nbSector, "number of sector for log analyze");
+    app.add_option("-n, --numberSec", nbSector, "number of sector for log reconstruction");
     app.add_option("-o, --output", outputFile, "output prefixe");
     app.get_formatter()->column_width(40);
     CLI11_PARSE(app, argc, argv);
