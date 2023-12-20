@@ -5,16 +5,6 @@
 #include <stdlib.h>
 #include <string>
 
-#include <pcl/common/common.h>
-#include <pcl/point_cloud.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/kdtree/kdtree.h>
-#include <pcl/filters/statistical_outlier_removal.h>
-#include <pcl/ModelCoefficients.h>
-#include <pcl/point_types.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl/segmentation/extract_clusters.h>
-
 #include "DGtal/base/Common.h"
 #include "DGtal/base/BasicTypes.h"
 #include "DGtal/helpers/StdDefs.h"
@@ -282,7 +272,7 @@ main(int argc,char **argv)
     trace.info()<<"number of points in brut log : "<<logPcl.size()<<std::endl;
     trace.info()<<"number of points in clean log : "<<cleanLogID.size()<<std::endl;
     trace.info()<<"number of points in centerline : "<<centerlinePcl.size()<<std::endl;
-    trace.info()<<"total time load : "<<load_duration<<std::endl;
+    trace.info()<<"total time load : "<<load_duration<<"ms"<<std::endl;
           /*******************************/
           /*RECONSTRUCT PROCESS BY SECTOR*/
           /*******************************/
@@ -370,7 +360,7 @@ main(int argc,char **argv)
     }
     rec_duration+=trace.endBlock();
     trace.info()<<"number of points in reconstruted log : "<<globalRecId.size()<<std::endl;
-    trace.info()<<"total time reconstruction : "<<rec_duration<<std::endl;
+    trace.info()<<"total time reconstruction : "<<rec_duration<<"ms"<<std::endl;
     /*****/
     /*Out*/
     /*****/

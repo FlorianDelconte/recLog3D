@@ -20,33 +20,9 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 message(STATUS "DGtal found.")
 
 # -----------------------------------------------------------------------------
-# Thread
-# -----------------------------------------------------------------------------
-FIND_PACKAGE(Threads)
-
-# -----------------------------------------------------------------------------
-# CLI11 et CSV
+# CLI11
 # -----------------------------------------------------------------------------
 include_directories( "${PROJECT_SOURCE_DIR}/ext/" )
-
-# -----------------------------------------------------------------------------
-# GSL
-# -----------------------------------------------------------------------------
-
-FIND_PACKAGE(GSL REQUIRED)
-INCLUDE_DIRECTORIES(${GSL_INCLUDE_DIRS})
-LINK_DIRECTORIES(${GSL_LIBRARIES})
-
-# -----------------------------------------------------------------------------
-# PCL
-# -----------------------------------------------------------------------------
-
-find_package(PCL 1.3 REQUIRED COMPONENTS common segmentation)
-include_directories(${PCL_INCLUDE_DIRS})
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
-
-SET(PCLLib ${PCL_SEGMENTATION_LIBRARIES})
 
 # -----------------------------------------------------------------------------
 # bin
@@ -54,4 +30,4 @@ SET(PCLLib ${PCL_SEGMENTATION_LIBRARIES})
 
 ADD_EXECUTABLE(logRec MainLogReconstruction3D IOHelper
     CylindricalPoint CylindricalCoordinateSystem)
-TARGET_LINK_LIBRARIES(logRec ${DGTAL_LIBRARIES} ${DGtalToolsLibDependencies} ${PCLLib} ${CMAKE_THREAD_LIBS_INIT} ${GSL_LIBRARIES})
+TARGET_LINK_LIBRARIES(logRec ${DGTAL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} )
