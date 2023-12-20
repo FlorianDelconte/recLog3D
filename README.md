@@ -1,7 +1,6 @@
 # RECONSTRUCTION OF 3D LOG
 ## dependencies
-CPP 11
-DGtal version 1.3 or later, see [DGtal installation] (https://github.com/DGtal-team/DGtal)
+DGtal version 1.3 or later, see [DGtal installation] (https://github.com/DGtal-team/DGtal).
 ## compilation instructions
 ```
 mkdir build
