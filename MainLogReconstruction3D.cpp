@@ -278,8 +278,7 @@ main(int argc,char **argv)
           /*******************************/
     trace.beginBlock("process ...");
     //colors (1 for each scans)
-    Z3i::RealPoint palette[nbScans] {Z3i::RealPoint(255,0,0),Z3i::RealPoint(0,255,0),
-                                Z3i::RealPoint(0,0,255),Z3i::RealPoint(255,255,0)};
+    Z3i::RealPoint palette[nbScans] {Z3i::RealPoint(255,0,0),Z3i::RealPoint(0,255,0),Z3i::RealPoint(0,0,255),Z3i::RealPoint(255,255,0)};
     //global log reconstruct
     std::vector<unsigned int> globalRecId=std::vector<unsigned int>();
     std::vector<unsigned int> globalRecScan=std::vector<unsigned int>();
