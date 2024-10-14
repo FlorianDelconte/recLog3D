@@ -13,7 +13,7 @@ set (CMAKE_CXX_STANDARD_REQUIRED TRUE)
 # -----------------------------------------------------------------------------
 # DGtal
 # -----------------------------------------------------------------------------
-FIND_PACKAGE(DGtal 1.3 REQUIRED)
+FIND_PACKAGE(DGtal 1.4 REQUIRED)
 INCLUDE_DIRECTORIES(${DGTAL_INCLUDE_DIRS})
 LINK_DIRECTORIES(${DGTAL_LIBRARY_DIRS})
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)

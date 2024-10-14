@@ -222,7 +222,7 @@ main(int argc,char **argv)
     double zCellsS=0.05;//in meter
     //number of sector
     //(CARE : 2 SECTOR DELETED IN NOISE PROCESS -> first and last sector) not a good idea
-    unsigned int nbSector {18};
+    unsigned int nbSector {10};
     //if log and centerline are not on the same scale, neeed to multiply centerline by :
     double SCALE=0.001;
     //number of scans
