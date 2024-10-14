@@ -1,4 +1,4 @@
-# RECONSTRUCTION OF 3D LOG
+# SCAN OVERLAP MANAGEMENT 
 ## dependencies
 DGtal version 1.4 or later, see [DGtal installation] (https://github.com/DGtal-team/DGtal).
 ## compilation instructions
