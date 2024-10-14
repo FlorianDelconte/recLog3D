@@ -215,11 +215,11 @@ main(int argc,char **argv)
     //path to clean id log
     std::string logCleanFile="../data/WSC2_clean.id";
     // cell's size of discretisation on radius axis
-    double rCellsS=0.05;//in meter
+    double rCellsS=0.015;//in meter
     // cell's size of discretisation on angle axis
     double aCellsS=(5*M_PI)/180;//in rad
     // cell's size of discretisation on heigth axis
-    double zCellsS=0.05;//in meter
+    double zCellsS=0.015;//in meter
     //number of sector
     //(CARE : 2 SECTOR DELETED IN NOISE PROCESS -> first and last sector) not a good idea
     unsigned int nbSector {10};

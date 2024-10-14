@@ -1,4 +1,8 @@
 # SCAN OVERLAP MANAGEMENT 
+<div style="display: flex; justify-content: space-around;">
+  <img src="avant.png" alt="Image before scan overlap management " width="45%" />
+  <img src="apres.png" alt="Image after scan overlap management" width="45%" />
+</div>
 ## dependencies
 DGtal version 1.4 or later, see [DGtal installation] (https://github.com/DGtal-team/DGtal).
 ## compilation instructions
