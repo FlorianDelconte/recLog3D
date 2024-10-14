@@ -207,13 +207,13 @@ main(int argc,char **argv)
 {
 
     //path to PCL log
-    std::string logFile="../data/RGB_R_WSPS4_Cloud.xyz";
+    std::string logFile="../data/RGB_R_WSC2_Cloud.xyz";
     //path to PCL centerline
-    std::string centerlineFile="../data/WSPS4_centerline.xyz";
+    std::string centerlineFile="../data/WSC2_centerline.xyz";
     //output prefixe
-    std::string outputFile="WSPS4";
+    std::string outputFile="WSC2";
     //path to clean id log
-    std::string logCleanFile="../data/WSPS4_clean.id";
+    std::string logCleanFile="../data/WSC2_clean.id";
     // cell's size of discretisation on radius axis
     double rCellsS=0.05;//in meter
     // cell's size of discretisation on angle axis
@@ -272,13 +272,12 @@ main(int argc,char **argv)
     trace.info()<<"number of points in brut log : "<<logPcl.size()<<std::endl;
     trace.info()<<"number of points in clean log : "<<cleanLogID.size()<<std::endl;
     trace.info()<<"number of points in centerline : "<<centerlinePcl.size()<<std::endl;
-    trace.info()<<"total time load : "<<load_duration<<"ms"<<std::endl;
           /*******************************/
           /*RECONSTRUCT PROCESS BY SECTOR*/
           /*******************************/
     trace.beginBlock("process ...");
     //colors (1 for each scans)
-    Z3i::RealPoint palette[nbScans] {Z3i::RealPoint(255,0,0),Z3i::RealPoint(0,255,0),Z3i::RealPoint(0,0,255),Z3i::RealPoint(255,255,0)};
+    Z3i::RealPoint palette[]  = {Z3i::RealPoint(255,0,0),Z3i::RealPoint(0,255,0),Z3i::RealPoint(0,0,255),Z3i::RealPoint(255,255,0)};
     //global log reconstruct
     std::vector<unsigned int> globalRecId=std::vector<unsigned int>();
     std::vector<unsigned int> globalRecScan=std::vector<unsigned int>();
@@ -357,12 +356,12 @@ main(int argc,char **argv)
       }
       trace.info()<<"OK"<<std::endl;
     }
-    rec_duration+=trace.endBlock();
+    trace.endBlock();
     trace.info()<<"number of points in reconstruted log : "<<globalRecId.size()<<std::endl;
-    trace.info()<<"total time reconstruction : "<<rec_duration<<"ms"<<std::endl;
+
     /*****/
     /*Out*/
-    /*****/
+    trace.beginBlock("write output ...");
     //global log id
     IOHelper::export2Text(globalRecId,globalRecScan,outputFile+"_rec.id");
     //global log reconstruct with color per scan
@@ -374,5 +373,6 @@ main(int argc,char **argv)
         globalRecCOLOR.push_back(palette[globalRecScan[i]]);
     }
     IOHelper::export2Text(globalRecXYZ,globalRecCOLOR,outputFile+"_rec_colorByScan.xyz");
+    trace.endBlock();
 
 }
